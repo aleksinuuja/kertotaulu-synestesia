@@ -18,10 +18,14 @@ function s.resetGame()
   showSecondColour = false
   colour1 = {140, 200, 240, 255}
   colour2 = {250, 200, 240, 255}
+  sound1index = 0
+  sound2index = 0
   allButtons = {}
 
   local font = love.graphics.newFont("graphics/Krungthep.ttf", 56)
   feedbackText = love.graphics.newText(font, "This is FEEDBACK")
+  feedbackNum1 = love.graphics.newText(font, "1")
+  feedbackNum2 = love.graphics.newText(font, "2")
 
   question = Question:new({
     x = love.graphics.getWidth() * 1/4,
@@ -66,8 +70,16 @@ function s.resetGame()
     if isFeedback then
       if feedBackTime == 4 then
         showFirstColour = true
+        audio.Note[audioChannel][sound1index]:stop()
+    		audio.Note[audioChannel][sound1index]:setVolume(0.5)
+    		audio.Note[audioChannel][sound1index]:play()
+        audioChannel = audioChannel + 1; if audioChannel > 2 then audioChannel = 1 end
       elseif feedBackTime == 2 then
         showSecondColour = true
+        audio.Note[audioChannel][sound2index]:stop()
+    		audio.Note[audioChannel][sound2index]:setVolume(0.5)
+    		audio.Note[audioChannel][sound2index]:play()
+        audioChannel = audioChannel + 1; if audioChannel > 2 then audioChannel = 1 end
       elseif feedBackTime == 0 then
         isFeedback = false
         showFirstColour = false
@@ -92,7 +104,6 @@ function gameStates.maingame.draw()
   love.graphics.setColor(255, 255, 255)
   love.graphics.rectangle("fill", 0, 0, love.graphics.getWidth()/tv("scale"), love.graphics.getHeight()/tv("scale"))
 
-  question:draw()
   if not isFeedback then
     for i,button in ipairs(allButtons) do
       button:draw()
@@ -100,12 +111,13 @@ function gameStates.maingame.draw()
   else
     drawFeedback()
   end
+  question:draw()
 
   -- then reset transformations and draw static overlay graphics such as texts and menus
   love.graphics.pop()
 
-  love.graphics.setColor(255, 255, 255)
-  love.graphics.print("Current FPS: " .. tostring(currentFPS), love.graphics.getHeight()+10, 10)
+--  love.graphics.setColor(255, 255, 255)
+--  love.graphics.print("Current FPS: " .. tostring(currentFPS), love.graphics.getHeight()+10, 10)
 end
 
 function drawFeedback()
@@ -113,17 +125,47 @@ function drawFeedback()
   -- colours
   if showFirstColour then
     love.graphics.setColor(colour1)
-    love.graphics.rectangle("fill", love.graphics.getWidth()*2/4-30, love.graphics.getHeight()*2/4-12, allButtons[1].width, allButtons[1].height/2, 5, 5)
+    love.graphics.rectangle("fill", 0, 0, love.graphics.getWidth(), love.graphics.getHeight()/2+30, 5, 5)
   end
 
   if showSecondColour then
     love.graphics.setColor(colour2)
-    love.graphics.rectangle("fill", love.graphics.getWidth()*2/4-30, love.graphics.getHeight()*2/4-12+allButtons[1].height/2, allButtons[1].width, allButtons[1].height/2, 5, 5)
+    love.graphics.rectangle("fill", 0, love.graphics.getHeight()/2+30, love.graphics.getWidth(), love.graphics.getHeight()/2-30, 5, 5)
   end
+
+  --[[
+  local darkercolour = {}
+
+  -- feedback numbers
+  if showFirstColour then
+    darkercolour[1] = colour1[1] * 1/2
+    darkercolour[2] = colour1[2] * 1/2
+    darkercolour[3] = colour1[3] * 1/2
+    love.graphics.setColor(darkercolour)
+    love.graphics.draw(feedbackNum1, love.graphics.getWidth()*2/4, 20, 0, 5, 5)
+  end
+
+  if showSecondColour then
+    darkercolour[1] = colour2[1] * 1/2
+    darkercolour[2] = colour2[2] * 1/2
+    darkercolour[3] = colour2[3] * 1/2
+    love.graphics.setColor(darkercolour)
+    love.graphics.draw(feedbackNum2, love.graphics.getWidth()*2/4, love.graphics.getHeight()*6/10, 0, 5, 5)
+  end
+]]--
+
+
+  -- box behind text
+  love.graphics.setColor(50, 50, 50)
+  love.graphics.setLineWidth(5)
+  love.graphics.rectangle("line", love.graphics.getWidth()*1/5+10, love.graphics.getHeight()*2/5+50, love.graphics.getWidth()*2/5, love.graphics.getHeight()*1/5-20, 5, 5)
+  love.graphics.setColor(255, 255, 255)
+  love.graphics.rectangle("fill", love.graphics.getWidth()*1/5+10, love.graphics.getHeight()*2/5+50, love.graphics.getWidth()*2/5, love.graphics.getHeight()*1/5-20, 5, 5)
+
 
   -- Feedback text
   love.graphics.setColor(50, 50, 50)
-  love.graphics.draw(feedbackText, love.graphics.getWidth()*2/4, love.graphics.getHeight()*2/4)
+  love.graphics.draw(feedbackText, love.graphics.getWidth()*2/4-100, love.graphics.getHeight()*2/4)
 
 
 end

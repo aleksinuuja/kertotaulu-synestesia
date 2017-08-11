@@ -38,8 +38,23 @@ function Question:newQuestion()
   local ci = math.random(3) -- how manieth question is right
   a = math.random(8) + 1
   b = math.random(8) + 1
-  colour1 = colourForNumber(a)
-  colour2 = colourForNumber(b)
+
+  if a <= b then -- always lower number first for colour and sound
+    colour1 = colourForNumber(a)
+    colour2 = colourForNumber(b)
+    sound1index = a-1
+    sound2index = b-1
+    feedbackNum1:set(a)
+    feedbackNum2:set(b)
+  else
+    colour2 = colourForNumber(a)
+    colour1 = colourForNumber(b)
+    sound2index = a-1
+    sound1index = b-1
+    feedbackNum2:set(a)
+    feedbackNum1:set(b)
+  end
+
   answer1 = a*b
   allButtons[ci].value = tostring(answer1)
   allButtons[ci].text:set(tostring(answer1))
@@ -48,7 +63,7 @@ function Question:newQuestion()
 
   ci = ci + 1; if ci > 3 then ci = 1 end
 
-  self.value = tostring(a) .. " * " .. tostring(b) .. " = "
+  self.value = tostring(a) .. " · " .. tostring(b) .. " = "
   self.text:set(self.value)
 
   -- wrong answers:
@@ -76,13 +91,13 @@ function Question:newQuestion()
 end
 
 function colourForNumber(n)
-  if n == 2 then return {100,200,255,255} -- kelt
-  elseif n == 3 then return {255,100,100,255} -- pun
-  elseif n == 4 then return {100,100,255,255} -- sin
-  elseif n == 5 then return {100,255,100,255} -- vih
-  elseif n == 6 then return {255,100,255,255} -- viol
-  elseif n == 7 then return {255,200,100,255} -- orans
-  elseif n == 8 then return {255,100,200,255} -- pinkki
-  elseif n == 9 then return {200,150,200,255} -- ruskea
+  if n == 2 then return {255,226,0,200} -- kelt
+  elseif n == 3 then return {199,44,58,200} -- pun
+  elseif n == 4 then return {61,93,154,200} -- sin
+  elseif n == 5 then return {0,145,106,200} -- vih
+  elseif n == 6 then return {136,122,183,200} -- viol
+  elseif n == 7 then return {245,131,77,200} -- orans
+  elseif n == 8 then return {253,114,251,200} -- pinkki
+  elseif n == 9 then return {170,66,37,200} -- ruskea
   end
 end

@@ -1,4 +1,5 @@
-require 'tween2'
+require "tween2"
+require "audio"
 
 function love.load()
 	math.randomseed(os.time())
@@ -14,6 +15,9 @@ function love.load()
 
 	tweenEngine = Tween:new()
 	initiateTweenValues()
+
+	audio = Audio:new()
+	audioChannel = 1
 
 	-- initiate state handling
 	gameStates = {}
