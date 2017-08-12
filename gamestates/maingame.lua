@@ -1,3 +1,5 @@
+sound1index = 0
+sound2index = 0
 gameStates.maingame = {}
 s = gameStates.maingame -- short ref to maingame state
 s.isInitiated = false
@@ -13,28 +15,49 @@ end
 function s.resetGame()
   s.isPaused = false
   isFeedback = false
+  score = 0
   feedBackTime = 0
   showFirstColour = false
   showSecondColour = false
   colour1 = {140, 200, 240, 255}
   colour2 = {250, 200, 240, 255}
+  colour3 = {140, 200, 240, 255}
+  colour4 = {250, 200, 240, 255}
   sound1index = 0
   sound2index = 0
+  sound3index = 0
+  sound4index = 0
   allButtons = {}
+  allQuestions = {}
+  show2Questions = true
 
   local font = love.graphics.newFont("graphics/Krungthep.ttf", 56)
   feedbackText = love.graphics.newText(font, "This is FEEDBACK")
   feedbackNum1 = love.graphics.newText(font, "1")
   feedbackNum2 = love.graphics.newText(font, "2")
+  font = love.graphics.newFont("graphics/Krungthep.ttf", 20)
+  scoreText = love.graphics.newText(font, tostring(score))
 
   question = Question:new({
     x = love.graphics.getWidth() * 1/4,
     y = love.graphics.getHeight() * 3/6,
     width = 400,
     height = 90,
-    value = "" -- number as a string - convert when comparing
+    valueA = "",
+    valueB = "",
+    isMainQuestion = true
   })
-
+  table.insert(allQuestions, question)
+  question2 = Question:new({
+    x = love.graphics.getWidth() * 1/4,
+    y = love.graphics.getHeight() * 3/6 + 75,
+    width = 400,
+    height = 90,
+    valueA = "",
+    valueB = "",
+    isMainQuestion = false
+  })
+  table.insert(allQuestions, question2)
 
   responseButton1 = Button:new({
     x = love.graphics.getWidth() * 3/5,
@@ -64,27 +87,48 @@ function s.resetGame()
   table.insert(allButtons, responseButton3)
 
   function onTick()
-    question:update() -- no idea why question update is called once a tick, it just initializes
-
     if feedBackTime > 0 then feedBackTime = feedBackTime -1 end
     if isFeedback then
       if feedBackTime == 4 then
+        score = score + 1
+        scoreText = love.graphics.newText(font, tostring(score))
         showFirstColour = true
+        if question.showAFirst then question.showAColour = true else question.showBColour = true end
         audio.Note[audioChannel][sound1index]:stop()
     		audio.Note[audioChannel][sound1index]:setVolume(0.5)
     		audio.Note[audioChannel][sound1index]:play()
         audioChannel = audioChannel + 1; if audioChannel > 2 then audioChannel = 1 end
+        if show2Questions then -- special case two questions and two sounds
+          if question2.showAFirst then question2.showAColour = true else question2.showBColour = true end
+          audio.Note[audioChannel+2][sound3index]:stop()
+      		audio.Note[audioChannel+2][sound3index]:setVolume(0.5)
+      		audio.Note[audioChannel+2][sound3index]:play()
+        end
       elseif feedBackTime == 2 then
         showSecondColour = true
+        if question.showAFirst then question.showBColour = true else question.showAColour = true end
+        question.showBColour = true -- ??????
         audio.Note[audioChannel][sound2index]:stop()
     		audio.Note[audioChannel][sound2index]:setVolume(0.5)
     		audio.Note[audioChannel][sound2index]:play()
         audioChannel = audioChannel + 1; if audioChannel > 2 then audioChannel = 1 end
+        if show2Questions then -- special case two questions and two sounds
+          if question2.showAFirst then question2.showBColour = true else question2.showAColour = true end
+          question2.showBColour = true -- ??????
+          audio.Note[audioChannel+2][sound4index]:stop()
+      		audio.Note[audioChannel+2][sound4index]:setVolume(0.5)
+      		audio.Note[audioChannel+2][sound4index]:play()
+        end
       elseif feedBackTime == 0 then
         isFeedback = false
         showFirstColour = false
         showSecondColour = false
+        question.showAColour = false
+        question.showBColour = false
+        question2.showAColour = false
+        question2.showBColour = false
         question:newQuestion()
+        question2:newQuestion()
       end
     end
   end
@@ -104,6 +148,10 @@ function gameStates.maingame.draw()
   love.graphics.setColor(255, 255, 255)
   love.graphics.rectangle("fill", 0, 0, love.graphics.getWidth()/tv("scale"), love.graphics.getHeight()/tv("scale"))
 
+  -- Show score
+  love.graphics.setColor(50, 50, 50)
+  love.graphics.draw(scoreText, 10, 10)
+
   if not isFeedback then
     for i,button in ipairs(allButtons) do
       button:draw()
@@ -111,7 +159,8 @@ function gameStates.maingame.draw()
   else
     drawFeedback()
   end
-  question:draw()
+  if show2Questions then question:draw(question.y-30) else question:draw(question.y) end
+  if show2Questions then question2:draw(question2.y-30) end
 
   -- then reset transformations and draw static overlay graphics such as texts and menus
   love.graphics.pop()
@@ -122,15 +171,39 @@ end
 
 function drawFeedback()
 
-  -- colours
-  if showFirstColour then
-    love.graphics.setColor(colour1)
-    love.graphics.rectangle("fill", 0, 0, love.graphics.getWidth(), love.graphics.getHeight()/2+30, 5, 5)
-  end
+  if not(show2Questions) then
+    -- colours
+    if showFirstColour then
+      love.graphics.setColor(colour1)
+      love.graphics.rectangle("fill", 0, 0, love.graphics.getWidth(), love.graphics.getHeight()/2+30, 5, 5)
+    end
 
-  if showSecondColour then
-    love.graphics.setColor(colour2)
-    love.graphics.rectangle("fill", 0, love.graphics.getHeight()/2+30, love.graphics.getWidth(), love.graphics.getHeight()/2-30, 5, 5)
+    if showSecondColour then
+      love.graphics.setColor(colour2)
+      love.graphics.rectangle("fill", 0, love.graphics.getHeight()/2+30, love.graphics.getWidth(), love.graphics.getHeight()/2-30, 5, 5)
+    end
+  else
+    -- special cases 12, 24, 36 show 4 colours!
+    if showFirstColour then
+      love.graphics.setColor(colour1)
+      love.graphics.rectangle("fill", 0, 0, love.graphics.getWidth()/2, love.graphics.getHeight()/2+30, 5, 5)
+    end
+
+    if showFirstColour then
+      love.graphics.setColor(colour3)
+      love.graphics.rectangle("fill", love.graphics.getWidth()/2, 0, love.graphics.getWidth()/2, love.graphics.getHeight()/2+30, 5, 5)
+    end
+
+    if showSecondColour then
+      love.graphics.setColor(colour2)
+      love.graphics.rectangle("fill", 0, love.graphics.getHeight()/2+30, love.graphics.getWidth()/2, love.graphics.getHeight()/2-30, 5, 5)
+    end
+
+    if showSecondColour then
+      love.graphics.setColor(colour4)
+      love.graphics.rectangle("fill", love.graphics.getWidth()/2, love.graphics.getHeight()/2+30, love.graphics.getWidth()/2, love.graphics.getHeight()/2-30, 5, 5)
+    end
+
   end
 
   --[[
@@ -217,6 +290,9 @@ function gameStates.maingame.update(dt)
 
   if not s.isPaused then
     theTicker:update()
+    for i,q in ipairs(allQuestions) do
+      q:update()
+    end
 
 --    theTicker.tickDuration = (1000 - timeScaleSlider.value) / 1000
   end -- is not paused
