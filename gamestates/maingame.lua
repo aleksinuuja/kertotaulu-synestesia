@@ -30,12 +30,19 @@ function s.resetGame()
   allButtons = {}
   allQuestions = {}
   show2Questions = true
+  waitingForClick = false
+  alreadyClicked = false
+  verbalFeedbackSet = false
+  feedbackIndex = 1
 
   local font = love.graphics.newFont("graphics/Krungthep.ttf", 56)
-  feedbackText = love.graphics.newText(font, "This is FEEDBACK")
-  feedbackNum1 = love.graphics.newText(font, "1")
-  feedbackNum2 = love.graphics.newText(font, "2")
+  feedbackText = love.graphics.newText(font, "") -- this is used to show the correct answer
+  feedbackNext = love.graphics.newText(font, "blä") -- this is used to show verbal feedback
+  feedbackNum1 = love.graphics.newText(font, "1") -- not used
+  feedbackNum2 = love.graphics.newText(font, "2") -- not used
+
   font = love.graphics.newFont("graphics/Krungthep.ttf", 20)
+  feedbackNext2 = love.graphics.newText(font, "blä") -- this is used to show "click next"
   scoreText = love.graphics.newText(font, tostring(score))
 
   question = Question:new({
@@ -90,6 +97,8 @@ function s.resetGame()
     if feedBackTime > 0 then feedBackTime = feedBackTime -1 end
     if isFeedback then
       if feedBackTime == 4 then
+        feedbackNext:set("")
+        feedbackNext2:set("")
         score = score + 1
         scoreText = love.graphics.newText(font, tostring(score))
         showFirstColour = true
@@ -120,19 +129,50 @@ function s.resetGame()
       		audio.Note[audioChannel+2][sound4index]:play()
         end
       elseif feedBackTime == 0 then
-        isFeedback = false
-        showFirstColour = false
-        showSecondColour = false
-        question.showAColour = false
-        question.showBColour = false
-        question2.showAColour = false
-        question2.showBColour = false
-        question:newQuestion()
-        question2:newQuestion()
+        if not(verbalFeedbackSet) then
+          feedbackNext:set(newFeedback())
+          feedbackNext2:set("Klikkaa seuraavaan")
+          verbalFeedbackSet = true
+        end
+        waitingForClick = true
+        if alreadyClicked == true then
+          alreadyClicked = false
+          waitingForClick = false
+          verbalFeedbackSet = false
+          isFeedback = false
+          showFirstColour = false
+          showSecondColour = false
+          question.showAColour = false
+          question.showBColour = false
+          question2.showAColour = false
+          question2.showBColour = false
+          question:newQuestion()
+          question2:newQuestion()
+        end
       end
     end
   end
   theTicker = Ticker:new({tickFunction = onTick})
+end
+
+function newFeedback()
+  local returnString
+
+
+  if feedbackIndex == 1 then returnString = "Oikein!"
+  elseif feedbackIndex == 2 then returnString = "Taas oikein!"
+  elseif feedbackIndex == 3 then returnString = "Hienoa!"
+  elseif feedbackIndex == 4 then returnString = "Olet mahtava!"
+  elseif feedbackIndex == 5 then returnString = "Oikein!"
+  elseif feedbackIndex == 6 then returnString = "Kyllä!"
+  elseif feedbackIndex == 7 then returnString = "Mahtavaa!"
+  elseif feedbackIndex == 8 then returnString = "Olet ilmiömäinen!"
+  elseif feedbackIndex == 9 then returnString = "Aivan oikein!"
+  elseif feedbackIndex == 10 then returnString = "Täsmälleen!"
+  end
+  feedbackIndex = feedbackIndex + 1
+  if feedbackIndex > 10 then feedbackIndex = 1 end
+  return returnString
 end
 
 function gameStates.maingame.draw()
@@ -206,6 +246,11 @@ function drawFeedback()
 
   end
 
+  -- textual feedback
+  love.graphics.setColor(50, 50, 50)
+  love.graphics.draw(feedbackNext, love.graphics.getWidth()*1/4, love.graphics.getHeight()*2/3)
+  love.graphics.draw(feedbackNext2, love.graphics.getWidth()*1/4, love.graphics.getHeight()*2/3+70)
+
   --[[
   local darkercolour = {}
 
@@ -248,24 +293,27 @@ function gameStates.maingame.mousepressed(x, y, button)
   x = x / tv("scale")
   y = y / tv("scale")
   if button == 1 then
-    -- check all buttons if they hit, if yes print their value
-    for i,b in ipairs(allButtons) do
-      if x > b.x and x < b.x + b.width
-      and y > b.y and y < b.y + b.height
-      then
-        if not(b.isDisabled) then
-          if b.correct then
-            print("is correct!")
-            isFeedback = true
-            feedBackTime = 5 -- how many ticks we show this (time also used to trigger colour and sound)
-            feedbackText:set(b.value)
-          else
-            b.isDisabled = true
+    if waitingForClick then alreadyClicked = true
+    elseif not isFeedback then
+      -- check all buttons if they hit, if yes print their value
+      for i,b in ipairs(allButtons) do
+        if x > b.x and x < b.x + b.width
+        and y > b.y and y < b.y + b.height
+        then
+          if not(b.isDisabled) then
+            if b.correct then
+              print("is correct!")
+              isFeedback = true
+              feedBackTime = 5 -- how many ticks we show this (time also used to trigger colour and sound)
+              feedbackText:set(b.value)
+            else
+              b.isDisabled = true
+            end
           end
         end
       end
+      theTicker:forceTickNow()
     end
-    theTicker:forceTickNow()
   end
 end
 
